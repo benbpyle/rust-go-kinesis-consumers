@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  kinesis-consumer
+
+  Sample SAM Template for kinesis-consumer
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  KinesisStream: 
+    Type: AWS::Kinesis::Stream
+    Properties:
+      RetentionPeriodHours: 24
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+
+  ApplicationConsumer: 
+    Type: AWS::Kinesis::StreamConsumer
+    Properties:
+      ConsumerName: ApplicationConsumer
+      StreamARN: !GetAtt KinesisStream.Arn
+
+  ConsumerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Metadata:
+      BuildMethod: rust-cargolambda # More info about Cargo Lambda: https://github.com/cargo-lambda/cargo-lambda
+    Properties:
+      CodeUri: ./rust_app   # Points to dir of Cargo.toml
+      Handler: bootstrap    # Do not change, as this is the default executable name produced by Cargo Lambda
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      Events: 
+        Stream: 
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt ApplicationConsumer.ConsumerARN
+            StartingPosition: LATEST
+            BatchSize: 100

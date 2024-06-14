@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use rand::Rng;
 use serde::Serialize;
 use svix_ksuid::{Ksuid, KsuidLike};
 
@@ -7,25 +8,23 @@ use svix_ksuid::{Ksuid, KsuidLike};
 pub struct ModelOne {
     id: String,
     name: String,
-    locations: Vec<String>,
-    write_time: DateTime<Utc>,
-}
-
-#[derive(Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ModelTwo {
-    id: String,
-    name: String,
-    scores: Vec<i32>,
+    location: String,
     write_time: DateTime<Utc>,
 }
 
 impl ModelOne {
-    pub fn new(name: String, locations: Vec<String>) -> ModelOne {
+    pub fn new(name: String) -> ModelOne {
         let model_one_id = Ksuid::new(None, None);
 
+        let locations = [
+            String::from("House"),
+            String::from("Car"),
+            String::from("Diner"),
+        ];
+        let random_string_index: usize = rand::thread_rng().gen_range(0..locations.len());
+        let s = locations[random_string_index].clone();
         ModelOne {
-            locations,
+            location: s,
             name,
             id: model_one_id.to_string(),
             write_time: Utc::now(),
@@ -34,18 +33,5 @@ impl ModelOne {
 
     pub fn get_id(&self) -> &str {
         self.id.as_str()
-    }
-}
-
-impl ModelTwo {
-    pub fn new(name: String, scores: Vec<i32>) -> ModelTwo {
-        let model_two_id = Ksuid::new(None, None);
-
-        ModelTwo {
-            scores,
-            name,
-            id: model_two_id.to_string(),
-            write_time: Utc::now(),
-        }
     }
 }

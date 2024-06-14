@@ -20,24 +20,18 @@ Resources:
       StreamModeDetails:
         StreamMode: ON_DEMAND
 
-  GoConsumerFunction:
-    Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      FunctionName: kinesis-consumer-model-one-go
-      CodeUri: kinesis-consumer-model-one-go/.
-      Handler: bootstrap
-      Runtime: provided.al2023
-      Architectures:
-        - arm64
-      Events:
-        Stream:
-          Type: Kinesis
-          Properties:
-            Stream: !GetAtt KinesisStream.Arn
-            StartingPosition: LATEST
-            BatchSize: 10
+      TableName: Locations
+      AttributeDefinitions:
+        - AttributeName: location
+          AttributeType: S
+      KeySchema:
+        - AttributeName: location
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
   RustConsumerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Metadata:
@@ -52,10 +46,18 @@ Resources:
       Runtime: provided.al2023
       Architectures:
         - arm64
+      Policies:
+        - AmazonDynamoDBFullAccess
+        - Version: "2012-10-17" # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - ssm:*
+              Resource: "*"
       Events:
         Stream:
           Type: Kinesis
           Properties:
             Stream: !GetAtt KinesisStream.Arn
             StartingPosition: LATEST
-            BatchSize: 10
+            BatchSize: 1

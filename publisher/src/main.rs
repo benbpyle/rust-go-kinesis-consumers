@@ -8,15 +8,8 @@ use crate::models::ModelOne;
 
 async fn thread_runner(client: Client) {
     let mut i = 0;
-    while i < 1000 {
-        let model_one = ModelOne::new(
-            String::from("Model One"),
-            vec![
-                String::from("House"),
-                String::from("Car"),
-                String::from("Diner"),
-            ],
-        );
+    while i < 10000 {
+        let model_one = ModelOne::new(String::from("Model One"));
 
         let model_one_json = serde_json::to_string(&model_one);
         let model_one_blob = Blob::new(model_one_json.unwrap());

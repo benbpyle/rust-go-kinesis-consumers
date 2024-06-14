@@ -13,6 +13,8 @@ pub struct ModelOne {
 }
 
 impl ModelOne {
+    /// New creates a new ModelOne
+    /// Randomly picks a location from the Location Array of Strings
     pub fn new(name: String) -> ModelOne {
         let model_one_id = Ksuid::new(None, None);
 

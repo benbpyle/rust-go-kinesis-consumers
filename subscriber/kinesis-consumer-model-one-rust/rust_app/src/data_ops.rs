@@ -1,24 +1,33 @@
 use crate::{errors::CacheError, models::CacheModel};
 use momento::{cache::GetResponse, CacheClient};
 
+/// Fetch item coordinates this workflow
+///     Fetch from Cache
+///         If not found, go to DynamoDB
+///             If found in DDB then persist in Momento with a Set Dictionary
+///         Return Empty
 pub async fn fetch_item(
     ddb_client: &aws_sdk_dynamodb::Client,
     cache_client: &CacheClient,
     location: String,
 ) -> Result<Option<CacheModel>, CacheError> {
     tracing::info!(location = location, "Fetching from cache");
+    // use the client to execute a Get
     match cache_client
         .get("sample-a".to_string(), location.clone())
         .await
     {
         Ok(r) => match r {
+            // match on OK or Error
             GetResponse::Hit { value } => {
+                // A Cache Hit
                 tracing::info!("Cache HIT");
                 let cached: String = value.try_into().expect("Should have been a string");
                 let model = serde_json::from_str(cached.as_ref()).unwrap();
                 Ok(Some(model))
             }
             GetResponse::Miss => {
+                // A Cache Miss
                 tracing::info!("Cache MISS, going to DDB");
                 let db_fetch_result = fetch_from_db(ddb_client, location.clone()).await;
                 match db_fetch_result {
@@ -41,6 +50,7 @@ pub async fn fetch_item(
     }
 }
 
+/// set_item performs the put to Momento for the Cache's Dictionary Object
 async fn set_item(cache_client: &CacheClient, cache_model: &CacheModel) -> Result<(), CacheError> {
     tracing::info!(
         location = cache_model.location.clone(),
@@ -59,6 +69,7 @@ async fn set_item(cache_client: &CacheClient, cache_model: &CacheModel) -> Resul
     }
 }
 
+/// fetch_from_db runs the DynamoDB query
 async fn fetch_from_db(
     ddb_client: &aws_sdk_dynamodb::Client,
     location: String,

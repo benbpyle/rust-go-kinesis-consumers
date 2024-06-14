@@ -20,10 +20,15 @@ async fn function_handler(
     event: LambdaEvent<KinesisEvent>,
 ) -> Result<(), Error> {
     info!("Starting the loop ...");
+
+    // loop the kinesis records
     for e in event.payload.records {
+        // convert the data into a ModelOne
+        // ModelOne implements the From trait
         let mut model_one: ModelOne = e.into();
         info!("(ModelOne BEFORE)={:?}", model_one);
 
+        // grab the item from storage
         let result = fetch_item(ddb_client, cache_client, model_one.read_location.clone()).await;
         match result {
             Ok(r) => {
@@ -52,6 +57,9 @@ async fn main() -> Result<(), Error> {
 
     let region_provider = RegionProviderChain::default_provider();
     let config = from_env().region(region_provider).load().await;
+
+    // create the ssm and ddb client
+    // ssm is used to fetch Momento's Key
     let client = aws_sdk_ssm::Client::new(&config);
     let ddb_client = aws_sdk_dynamodb::Client::new(&config);
     let parameter = client
@@ -60,11 +68,13 @@ async fn main() -> Result<(), Error> {
         .send()
         .await?;
 
+    // if no key, panic and don't start
     let api_key = match parameter.parameter {
         Some(p) => p.value.unwrap(),
         None => panic!("Error with parameter"),
     };
 
+    // create a new Momento client
     let cache_client = match CacheClient::builder()
         .default_ttl(Duration::from_secs(10))
         .configuration(configurations::Laptop::latest())
@@ -74,6 +84,8 @@ async fn main() -> Result<(), Error> {
         Ok(c) => c,
         Err(_) => panic!("error with momento client"),
     };
+
+    // shared variables since the func needs a certain lifetype in the closure
     let shared_cache_client = &cache_client;
     let shared_ddb_client = &ddb_client;
 

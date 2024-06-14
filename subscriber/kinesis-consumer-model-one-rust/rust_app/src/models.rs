@@ -2,6 +2,7 @@ use aws_lambda_events::kinesis::KinesisEventRecord;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+/// ModelOne is the main model that comes from the Kinesis Record
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelOne {
@@ -16,16 +17,7 @@ pub struct ModelOne {
     pub read_time: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct ModelTwo {
-    id: String,
-    name: String,
-    scores: Vec<i32>,
-    write_time: DateTime<Utc>,
-    read_time: Option<DateTime<Utc>>,
-}
-
+/// CacheModel is stored in DDB OR in Momento's Dictionary
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CacheModel {
     pub location: String,
@@ -33,6 +25,7 @@ pub struct CacheModel {
     pub notes: String,
 }
 
+/// Implementation of the From trait for converting from Kinesis
 impl From<KinesisEventRecord> for ModelOne {
     fn from(value: KinesisEventRecord) -> ModelOne {
         let mut model: ModelOne = serde_json::from_slice(value.kinesis.data.0.as_slice()).unwrap();

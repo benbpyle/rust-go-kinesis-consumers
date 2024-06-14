@@ -1,6 +1,7 @@
 use momento::MomentoError;
 use thiserror::Error;
 
+/// CacheError is the custom Error used in this Lambda Project
 #[derive(Error, Debug)]
 pub enum CacheError {
     #[error("Error communicating with Momento")]
